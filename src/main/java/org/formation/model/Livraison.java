@@ -1,11 +1,13 @@
 package org.formation.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 @Entity
@@ -24,6 +26,7 @@ public class Livraison {
 	private Status status;
 	
 	@OneToMany(cascade = CascadeType.ALL)
+	@JsonIgnore
 	private List<Trace> historique = new ArrayList<>();
 
 	private Instant creationDate;
@@ -33,6 +36,16 @@ public class Livraison {
 	}
 
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Livraison livraison = (Livraison) o;
+		return id == livraison.id;
+	}
 
-
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(id);
+	}
 }
