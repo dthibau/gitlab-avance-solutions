@@ -1,0 +1,20 @@
+2024-10-07 18:59:34,887 INFO o.a.j.u.JMeterUtils: Setting Locale to en_EN
+2024-10-07 18:59:34,928 INFO o.a.j.JMeter: Loading user properties from: /home/dthibau/.sdkman/candidates/jmeter/5.6/bin/user.properties
+2024-10-07 18:59:34,929 INFO o.a.j.JMeter: Loading system properties from: /home/dthibau/.sdkman/candidates/jmeter/5.6/bin/system.properties
+2024-10-07 18:59:34,937 INFO o.a.j.JMeter: Copyright (c) 1998-2023 The Apache Software Foundation
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: Version 5.6
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: java.version=21.0.4
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: java.vm.name=OpenJDK 64-Bit Server VM
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: os.name=Linux
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: os.arch=amd64
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: os.version=6.8.0-45-generic
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: file.encoding=UTF-8
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: java.awt.headless=null
+2024-10-07 18:59:34,938 INFO o.a.j.JMeter: Max memory     =1073741824
+2024-10-07 18:59:34,939 INFO o.a.j.JMeter: Available Processors =8
+2024-10-07 18:59:34,953 INFO o.a.j.JMeter: Default Locale=English (EN)
+2024-10-07 18:59:34,954 INFO o.a.j.JMeter: JMeter  Locale=English (EN)
+2024-10-07 18:59:34,954 INFO o.a.j.JMeter: JMeterHome=/home/dthibau/.sdkman/candidates/jmeter/5.6
+2024-10-07 18:59:34,954 INFO o.a.j.JMeter: user.dir  =/home/dthibau/Formations/GitLabAvance/MyWork/delivery-service
+2024-10-07 18:59:34,954 INFO o.a.j.JMeter: PWD       =/home/dthibau/Formations/GitLabAvance/MyWork/delivery-service
+2024-10-07 18:59:34,954 INFO o.a.j.JMeter: IP: 127.0.1.1 Name: dthibau-XPS-13-7390 FullName: dthibau-XPS-13-7390

@@ -23,7 +23,7 @@ variables:
   # This will suppress any download for dependencies and plugins or upload messages which would clutter the console log.
   # `showDateTime` will show the passed time in milliseconds. You need to specify `--batch-mode` to make this work.
   MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
-
+  APP_JAR: "delivery-service-0.0.1-SNAPSHOT.jar"
 # Cache downloaded dependencies and plugins between builds.
 # To keep cache across branches add 'key: "$CI_JOB_NAME"'
 cache:
@@ -31,18 +31,62 @@ cache:
     - .m2/repository
 
 stages:
-  - build
+  - package
   - test
+  - deploy-integration
 
-
-compile:
-  stage: build
+package:
+  stage: package
   script:
-    - echo "Compiling project"
-    - ./mvnw $MAVEN_OPTS clean compile
+    - echo "Tests unitaire et packaging"
+    - ./mvnw $MAVEN_OPTS clean package
+  artifacts:
+    paths:
+      - target/*.jar
 
-test:
+jacoco:
   stage: test
   script:
-    - echo "Compiling project"
-    - ./mvnw $MAVEN_OPTS clean test
+    - echo "Computing coverage report"
+    - ./mvnw test
+    - cp -r target/site/jacoco/ coverage/
+  dependencies: []
+  artifacts:
+    paths:
+      - coverage/
+    expose_as: 'Rapport Jacocco'
+
+integration-test:
+  stage: test
+  dependencies:
+    - package
+  script:
+    - echo "Starting Spring Boot application..."
+    - nohup java -jar target/$APP_JAR &
+    - APP_PID=$!
+    # Attendre que l'application soit démarrée (par exemple en vérifiant une URL)
+    - until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done
+    # Testing some URLS les tests JMeter
+    - echo "Testing some URLs ..."
+    - |
+      if ! curl --fail -s http://localhost:8080/api/livraison; then
+        echo "First request failed: API request failed"
+        kill $APP_PID
+        exit 1
+      fi
+    # Arrêter l'application
+    - echo "Stopping Spring Boot application..."
+    - kill $APP_PID
+
+deploy-integration:
+  stage: deploy-integration
+  tags:
+    - shell
+  script:
+    - ls target/
+    - cp target/*.jar .
+    - echo "Restarting service"
+  dependencies:
+    - package
+
+
