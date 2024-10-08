@@ -67,29 +67,23 @@ jacoco:
         - target/surefire-reports/*.xml
 
 integration-test:
+  services:
+    - name : dthibau/delivery-service:0.0.1-SNAPSHOT
+      alias: delivery-service
+  image: dthibau/jmeter
   stage: test
   interruptible: true
-  variables:
-      GIT_STRATEGY: none
+  artifacts:
+    paths:
+      - fonctionnel-report/
+    expose_as: 'Rapport tests fonctionnels'
   dependencies:
     - package
   script:
-    - echo "Starting Spring Boot application..."
-    - nohup java -jar target/$APP_JAR &
-    - APP_PID=$!
-    # Attendre que l'application soit démarrée (par exemple en vérifiant une URL)
-    - until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done
     # Testing some URLS les tests JMeter
     - echo "Testing some URLs ..."
-    - |
-      if ! curl --fail -s http://localhost:8080/api/livraison; then
-        echo "First request failed: API request failed"
-        kill $APP_PID
-        exit 1
-      fi
-    # Arrêter l'application
-    - echo "Stopping Spring Boot application..."
-    - kill $APP_PID
+    - jmeter -n -JSERVEUR=delivery-service -t src/test/jmeter/Fonctionnel.jmx -l results.jtl -e -o fonctionnel-report
+
 
 deploy-integration:
   stage: deploy-integration
