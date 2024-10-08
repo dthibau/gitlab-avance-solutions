@@ -29,6 +29,9 @@ variables:
 cache:
   paths:
     - .m2/repository
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
 
 stages:
   - package
@@ -37,6 +40,7 @@ stages:
 
 package:
   stage: package
+  interruptible: true
   script:
     - echo "Tests unitaire et packaging"
     - ./mvnw $MAVEN_OPTS clean package
@@ -46,6 +50,7 @@ package:
 
 jacoco:
   stage: test
+  interruptible: true
   script:
     - echo "Computing coverage report"
     - ./mvnw test
@@ -61,6 +66,9 @@ jacoco:
 
 integration-test:
   stage: test
+  interruptible: true
+  variables:
+      GIT_STRATEGY: none
   dependencies:
     - package
   script:
@@ -83,6 +91,11 @@ integration-test:
 
 deploy-integration:
   stage: deploy-integration
+  interruptible: true
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED && $CI_MERGE_REQUEST_APPROVED
+  variables:
+    GIT_STRATEGY: none
   tags:
     - shell
   script:
