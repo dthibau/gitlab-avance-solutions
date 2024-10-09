@@ -41,11 +41,15 @@ stages:
   - package
   - deploy-image
   - test
-  - deploy-integration
+  - deploy-review
+  - deploy-staging
+  - deploy-production
 
 package:
   stage: package
   interruptible: true
+  rules:
+    - if: $CI_COMMIT_BRANCH != 'production'
   script:
     - echo "Tests unitaire et packaging"
     - ./mvnw $MAVEN_OPTS clean package
@@ -57,19 +61,20 @@ deploy-image:
   stage: deploy-image
   interruptible: true
   image: docker
+  rules:
+    - if: $CI_COMMIT_BRANCH != 'production'
   script:
      - ls
      - mv target/$APP_JAR .
      -  docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-     - docker build -t $CI_REGISTRY/root/delivery-service:$CI_COMMIT_BRANCH .
-     - docker push $CI_REGISTRY/root/delivery-service:$CI_COMMIT_BRANCH
-    # - docker login -u $DOCKER_LOGIN -p $DOCKER_PWD
-    # - docker build -t "$DOCKER_LOGIN/delivery-service:$CI_COMMIT_BRANCH" .
-    # - docker push $DOCKER_LOGIN/delivery-service:$CI_COMMIT_BRANCH
+     - docker build -t $CI_REGISTRY/$CI_PROJECT_NAMESPACE/delivery-service:$CI_COMMIT_BRANCH .
+     - docker push $CI_REGISTRY/$CI_PROJECT_NAMESPACE/delivery-service:$CI_COMMIT_BRANCH
 
 jacoco:
   stage: test
   interruptible: true
+  rules:
+    - if: $CI_COMMIT_BRANCH != 'production'
   script:
     - echo "Computing coverage report"
     - ./mvnw test
@@ -88,6 +93,8 @@ integration-test:
     - name : $CI_REGISTRY/root/delivery-service:$CI_COMMIT_BRANCH
       alias: delivery-service
   image: dthibau/jmeter
+  rules:
+    - if: $CI_COMMIT_BRANCH != 'production'
   stage: test
   interruptible: true
   artifacts:
@@ -102,20 +109,88 @@ integration-test:
     - jmeter -n -JSERVEUR=delivery-service -t src/test/jmeter/Fonctionnel.jmx -l results.jtl -e -o fonctionnel-report
 
 
-deploy-integration:
-  stage: deploy-integration
-  interruptible: true
+deploy_review:
+  stage: deploy-review
+  image: docker
   rules:
-    - if: $CI_COMMIT_REF_PROTECTED && $CI_MERGE_REQUEST_APPROVED
+    - if: '$CI_COMMIT_REF_PROTECTED == "false" && $CI_PIPELINE_SOURCE != "merge_request_event"'
+  script:
+    - echo "Deploy a review app"
+    - env
+    - echo $CI_COMMIT_BRANCH
+    - docker stop $CI_COMMIT_BRANCH || true
+    - docker rm $CI_COMMIT_BRANCH || true
+    - docker run -d -p 7978:8080 --name $CI_COMMIT_BRANCH $CI_REGISTRY/$CI_PROJECT_NAMESPACE/delivery-service:$CI_COMMIT_BRANCH
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: http://gitlab.formation.org:7978
+    on_stop: stop-review
+  dependencies: []
+
+stop-review:
+  stage: deploy-review
+  image: docker
   variables:
     GIT_STRATEGY: none
+  script:
+    - echo "Remove review app"
+    - docker stop $CI_COMMIT_BRANCH || true
+    - docker rm $CI_COMMIT_BRANCH || true
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
+
+
+deploy_staging:
+  stage: deploy-staging
+  image: docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'main'
+  script:
+    - echo "Deploy to staging server"
+    - docker stop main || true
+    - docker rm main || true
+    - docker run -d -p 7979:8080 --name $CI_COMMIT_BRANCH $CI_REGISTRY/$CI_PROJECT_NAMESPACE/delivery-service:main
+  environment:
+    name: staging
+    url: http://gitlab.formation.org:7979
+  dependencies: []
+
+push_to_production:
+  stage: deploy-production
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'main'
   tags:
     - shell
   script:
-    - ls target/
-    - cp target/*.jar .
-    - echo "Restarting service"
-  dependencies:
-    - package
+    - git config --global user.email "ci-bot@example.com"
+    - git config --global user.name "CI Bot"
+    - git branch
+    - git remote -v
+    - git checkout production  # Bascule sur la branche de production
+    - git merge origin/main  # Fusionne les changements de la branche main
+    - git push http://production-token:$PUSH_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git production  # Pousse vers la branche protégée production
+  dependencies: []
+  when: manual
+
+deploy_prod:
+  stage: deploy-production
+  image: docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'production'
+  script:
+    - echo "Deploy to production server"
+    - docker tag $CI_REGISTRY/$CI_PROJECT_NAMESPACE/delivery-service:main $CI_REGISTRY/$CI_PROJECT_NAMESPACE/delivery-service:production
+    - docker stop production || true
+    - docker rm production || true
+    - docker run -d -p 8080:8080 --name $CI_COMMIT_BRANCH $CI_REGISTRY/$CI_PROJECT_NAMESPACE/delivery-service:production
+  environment:
+    name: production
+    url: http://gitlab.formation.org:8080
+  dependencies: []
+
+
+
 
 
