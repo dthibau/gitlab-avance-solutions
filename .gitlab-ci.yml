@@ -17,8 +17,10 @@
 include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
-image: openjdk:21-jdk-oracle
+
 default:
+  image:
+    name: openjdk:21-jdk-oracle
   tags:
     - docker
 variables:
@@ -37,6 +39,7 @@ workflow:
 
 stages:
   - package
+  - deploy-image
   - test
   - deploy-integration
 
@@ -49,6 +52,20 @@ package:
   artifacts:
     paths:
       - target/*.jar
+
+deploy-image:
+  stage: deploy-image
+  interruptible: true
+  image: docker
+  script:
+     - ls
+     - mv target/$APP_JAR .
+     -  docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+     - docker build -t $CI_REGISTRY/root/delivery-service:$CI_COMMIT_BRANCH .
+     - docker push $CI_REGISTRY/root/delivery-service:$CI_COMMIT_BRANCH
+    # - docker login -u $DOCKER_LOGIN -p $DOCKER_PWD
+    # - docker build -t "$DOCKER_LOGIN/delivery-service:$CI_COMMIT_BRANCH" .
+    # - docker push $DOCKER_LOGIN/delivery-service:$CI_COMMIT_BRANCH
 
 jacoco:
   stage: test
@@ -68,7 +85,7 @@ jacoco:
 
 integration-test:
   services:
-    - name : dthibau/delivery-service:0.0.1-SNAPSHOT
+    - name : $CI_REGISTRY/root/delivery-service:$CI_COMMIT_BRANCH
       alias: delivery-service
   image: dthibau/jmeter
   stage: test
