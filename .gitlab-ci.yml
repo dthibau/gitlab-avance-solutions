@@ -43,6 +43,8 @@ stages:
   - test
   - deploy-review
   - deploy-staging
+  - deploy-package
+  - release
   - deploy-production
 
 package:
@@ -166,8 +168,8 @@ push_to_production:
   script:
     - git config --global user.email "ci-bot@example.com"
     - git config --global user.name "CI Bot"
-    - git branch
-    - git remote -v
+    - git fetch origin
+    - git branch -v -a
     - git checkout production  # Bascule sur la branche de production
     - git merge origin/main  # Fusionne les changements de la branche main
     - git push http://production-token:$PUSH_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git production  # Pousse vers la branche protégée production
@@ -175,11 +177,25 @@ push_to_production:
   when: manual
 
 deploy-package:
-  stage: deploy-production
+  stage: deploy-package
   rules:
     - if: $CI_COMMIT_BRANCH == 'production'
   script:
     - ./mvnw -s settings.xml deploy
+
+release_job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never        # Ne pas exécuter si création manuelle de tag
+    - if: $CI_COMMIT_BRANCH == 'production'  # Branche par défaut
+  script:
+    - echo "running release_job for $TAG"
+  release:
+    tag_name: 'v0.$CI_PIPELINE_IID'      # Version incrémentée par pipeline
+    description: 'v0.$CI_PIPELINE_IID'
+    ref: '$CI_COMMIT_SHA'               # tag créé à partir du SHA1.
 
 deploy_prod:
   stage: deploy-production
