@@ -55,6 +55,9 @@ jacoco:
     paths:
       - coverage/
     expose_as: 'Rapport Jacocco'
+    reports:
+      junit:
+        - target/surefire-reports/*.xml
 
 integration-test:
   stage: test
