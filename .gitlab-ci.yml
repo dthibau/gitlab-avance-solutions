@@ -14,7 +14,9 @@
 #   with multiple JDKs.
 # * Uses site:stage to collect the documentation for multi-module projects.
 # * Publishes the documentation for `master` branch.
-
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
 image: openjdk:21-jdk-oracle
 default:
   tags:
