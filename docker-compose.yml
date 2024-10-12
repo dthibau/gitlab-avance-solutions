@@ -1,0 +1,52 @@
+
+services:
+  gitlab.formation.org:
+    image: gitlab/gitlab-ce:latest
+    hostname: gitlab.formation.org
+    container_name: gitlab
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab.formation.org'
+        # gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        # Configuration du registry Docker intégré à GitLab
+        registry_external_url 'http://gitlab.formation.org:5050'
+        gitlab_rails['registry_enabled'] = true
+        gitlab_rails['registry_host'] = 'gitlab.formation.org'
+        gitlab_rails['registry_port'] = "5050"
+        gitlab_rails['smtp_enable'] = true
+        gitlab_rails['smtp_address'] = "smtp.plbformation.com"
+        gitlab_rails['smtp_port'] = 587
+        gitlab_rails['smtp_user_name'] = "stageojen@plbformation.com"
+        gitlab_rails['smtp_password'] = "stageojen"
+        gitlab_rails['smtp_domain'] = "plbformation.com"
+        gitlab_rails['smtp_authentication'] = "login"
+        gitlab_rails['smtp_enable_starttls_auto'] = false
+        gitlab_rails['gitlab_email_from'] = 'gitlab@formation.org'
+        gitlab_rails['gitlab_email_reply_to'] = 'noreply@formation.org'
+    ports:
+    - '22:22'    
+    - 443:443
+    - 80:80
+    - '5050:5050'
+    - 5000:5000
+    volumes:
+      - ./GITLAB_HOME/config:/etc/gitlab
+      - ./GITLAB_HOME/logs:/var/log/gitlab
+      - ./GITLAB_HOME/data:/var/opt/gitlab
+    networks:
+      - gitlab-network
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest 
+    container_name: gitlab-runner
+    volumes:
+      - ./Serveurs:/home/gitlab-runner:Z
+      - ./GITLAB_RUNNER/config:/etc/gitlab-runner:Z
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - gitlab-network
+
+
+networks:
+  gitlab-network:
+    name: gitlab-network
+    
