@@ -170,6 +170,7 @@ push_to_production:
     - git config --global user.name "CI Bot"
     - git fetch origin
     - git branch -v -a
+    - git branch -D production
     - git checkout production  # Bascule sur la branche de production
     - git merge origin/main  # Fusionne les changements de la branche main
     - git push http://production-token:$PUSH_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git production  # Pousse vers la branche protégée production
